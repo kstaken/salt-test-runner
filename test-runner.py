@@ -36,7 +36,7 @@ client.start(result['Id'])
 time.sleep(5)
 
 # Accept the minion keys
-ret = call(["/usr/local/bin/salt-key", "-y", "-a", build_tag])
+ret = call(["/usr/bin/salt-key", "-y", "-a", build_tag])
 print ret
 #print call(["salt", build_tag, "test.ping"])
 
