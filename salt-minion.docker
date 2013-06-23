@@ -25,6 +25,4 @@ RUN apt-get install -y salt-minion
 
 RUN echo "master: 172.16.42.1\nid: salt-minion" > /etc/salt/minion
 
-ADD /etc/salt/minion /root/minion 
-
 CMD ["salt-minion"]

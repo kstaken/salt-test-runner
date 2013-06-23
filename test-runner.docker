@@ -1,0 +1,9 @@
+#
+# VERSION               0.0.1
+
+FROM      salt-minion
+MAINTAINER Kimbro Staken "kstaken@kstaken.com"
+
+CMD ["salt-minion"]
+
+RUN echo "master: 172.16.42.1\nid: test-runner" > /etc/salt/minion
