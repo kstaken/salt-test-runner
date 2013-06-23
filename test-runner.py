@@ -7,6 +7,8 @@ import salt.key
 from subprocess import call
 from subprocess import Popen
 
+# Verify user can connect to salt
+
 # Generate the docker build profile
 dockerfile = """FROM salt-minion
 MAINTAINER Kimbro Staken "kstaken@kstaken.com"
@@ -20,32 +22,40 @@ build_tag = "test-name-" + str(os.getpid())
 
 minionconfig = "\"master: 172.16.42.1\\nid: %s\"" % build_tag
 
-client = docker.Client()
+docker_client = docker.Client()
 
 # Build the container
-result = client.build((dockerfile % minionconfig).split('\n'))
+result = docker_client.build((dockerfile % minionconfig).split('\n'))
 image_id = result[0]
 
-client.tag(image_id, build_tag)
+docker_client.tag(image_id, build_tag)
 
 # Start the container
-result = client.create_container(image_id, "salt-minion", detach=True)
-client.start(result['Id'])
+container_id = docker_client.create_container(image_id, "salt-minion", detach=True)['Id']
+docker_client.start(container_id)
 
 # Give the minion a chance to connect
 time.sleep(5)
 
 # Accept the minion keys
 ret = call(["/usr/bin/salt-key", "-y", "-a", build_tag])
-print ret
-#print call(["salt", build_tag, "test.ping"])
 
 # run a test ping
-client = salt.client.LocalClient()
+salt_client = salt.client.LocalClient()
 max = 20
-while len(client.cmd(build_tag, 'test.ping')) == 0 and max > 0:
+while len(salt_client.cmd(build_tag, 'test.ping')) == 0 and max > 0:
   print "Waiting for minion to be available " + str(max)
   max = max - 1
   time.sleep(1)
 
-print client.cmd(build_tag, 'test.ping')
+if (len(salt_client.cmd(build_tag, 'test.ping')) == 0):
+  print "ERROR: Failed to ping the minion"
+  sys.exit(1)
+else:
+  print "Minion is reachable"
+
+# Cleanup
+ret = call(["/usr/bin/salt-key", "-y", "-d", build_tag])
+
+docker_client.stop(container_id)
+docker_client.remove_image(build_tag)
