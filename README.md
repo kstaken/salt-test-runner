@@ -11,4 +11,4 @@ Requires: Salt Stack & Docker
 
 Build a docker template with the salt-minion installed.
 
-  docker build - < salt-minion.docker
+    docker build - < salt-minion.docker
