@@ -10,13 +10,9 @@ MAINTAINER Kimbro Staken "kstaken@kstaken.com"
 RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
 RUN apt-get update
 
-RUN apt-get install -y wget sudo ca-certificates python-software-properties
+RUN apt-get install -y wget sudo ca-certificates python-software-properties 
 
 RUN add-apt-repository ppa:saltstack/salt
-
-RUN echo "127.0.0.1 localhost salt-minion" > /etc/hosts
-
-RUN echo "salt-minion" > /etc/hostname
 
 RUN apt-get update
 
@@ -24,6 +20,12 @@ RUN sudo dpkg-divert --local --rename --add /sbin/initctl
 
 RUN ln -s /bin/true /sbin/initctl
 
+RUN mkdir /etc/salt
+
 RUN apt-get install -y salt-minion
 
+RUN echo "master: 172.16.42.1\nid: salt-minion" > /etc/salt/minion
+
 #INSERT https://raw.github.com/file /path/to/file
+
+CMD ["salt-minion"]
