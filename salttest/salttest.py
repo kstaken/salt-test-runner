@@ -57,7 +57,17 @@ class TestContext():
     
     # Setup the salt tree.
     # link the test module into place
+    try:
+      os.remove("/srv/salt/" + self.test_name)
+    except:
+      True
+    os.symlink(os.getcwd() + "/" + self.test_name + "/" + self.test_name, "/srv/salt/" + self.test_name)
     # replace top.sls
+    os.remove("/srv/salt/top.sls")
+    os.symlink(os.getcwd() + "/" + self.test_name + "/test/top.sls", "/srv/salt/top.sls")
+
+  def highstate(self):
+    self.salt_client.cmd(self.build_tag, 'state.highstate')
 
   def destroy(self):
     # Cleanup
