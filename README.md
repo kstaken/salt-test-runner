@@ -13,13 +13,13 @@ Build a docker template with the salt-minion installed.
 
     docker build -t salt-minion - < salt-minion.docker
 
-Container can then be executed by running
+Container can then be executed by running.
     
     docker run -d salt-minion
 
-For test execution run as user that can run the salt command
+For test execution run as user that can run the salt command.
 
-    python test-runner.py
+    python example_test/test/test_init.py
     
 Limitations of testing with docker
 ==================================
