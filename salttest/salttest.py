@@ -9,22 +9,13 @@ from subprocess import Popen
 class TestContext():
   def __init__(self, test_name, minion_config=None, top_state=None):
     self.test_name = test_name
-    self.build_tag = "test-name-" + str(os.getpid())
+    self.build_tag = test_name + "-" + str(os.getpid())
     self.docker_client = docker.Client()
     self.salt_client = salt.client.LocalClient()
     self.minion_config = minion_config
     self.top_state = top_state
 
-  def set_test_name(self, test_name):
-    self.test_name = test_name
-
-  def set_minion_config(self, minion_config):
-    self.minion_config = minion_config
-
-  def set_top_state(self, top_state):
-    self.top_state = top_state
-
-  def build(self):
+  def build(self, singleton=False):
     # Generate the docker build profile
     dockerfile = """FROM salt-minion
     MAINTAINER Kimbro Staken "kstaken@kstaken.com"
@@ -74,68 +65,3 @@ class TestContext():
 
     self.docker_client.stop(self.container_id)
     self.docker_client.remove_image(self.build_tag)
-
-class SaltTest(unittest.TestCase):
-
-  def setUp(self):
-    # Generate the docker build profile
-    dockerfile = """FROM salt-minion
-    MAINTAINER Kimbro Staken "kstaken@kstaken.com"
-
-    CMD ["salt-minion"]
-
-    RUN echo %s > /etc/salt/minion
-    """
-
-    self.build_tag = "test-name-" + str(os.getpid())
-
-    minionconfig = "\"master: 172.16.42.1\\nid: %s\"" % self.build_tag
-
-    self.docker_client = docker.Client()
-
-    # Build the container
-    result = self.docker_client.build((dockerfile % minionconfig).split('\n'))
-    image_id = result[0]
-
-    self.docker_client.tag(image_id, self.build_tag)
-
-    # Start the container
-    self.container_id = self.docker_client.create_container(image_id, "salt-minion", detach=True)['Id']
-    self.docker_client.start(self.container_id)
-
-    # Give the minion a chance to connect
-    time.sleep(5)
-
-    # Accept the minion keys
-    ret = call(["/usr/bin/salt-key", "-y", "-a", self.build_tag])
-
-    # run a test ping
-    self.salt_client = salt.client.LocalClient()
-    max = 20
-    while len(self.salt_client.cmd(self.build_tag, 'test.ping')) == 0 and max > 0:
-      #print "Waiting for minion to be available " + str(max)
-      max = max - 1
-      time.sleep(1)
-
-    if (len(self.salt_client.cmd(self.build_tag, 'test.ping')) == 0):
-      print "ERROR: Failed to ping the minion"
-      sys.exit(1)
-    #else:
-      #print "Minion is reachable"
-
-    # Setup the salt tree.
-    # link the test module into place
-    # replace top.sls
-
-  def testPing(self):
-    self.assertNotEqual(len(self.salt_client.cmd(self.build_tag, 'test.ping')), 0)
-
-  def tearDown(self):
-    # Cleanup
-    ret = call(["/usr/bin/salt-key", "-y", "-d", self.build_tag])
-
-    self.docker_client.stop(self.container_id)
-    self.docker_client.remove_image(self.build_tag)
-
-if __name__ == '__main__':
-    unittest.main()
