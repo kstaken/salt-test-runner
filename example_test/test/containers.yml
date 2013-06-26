@@ -2,6 +2,6 @@ containers:
   example_test: 
     base: salt-minion-precise
     ports: 
-      - '8080'
+      - '8080'  
   example_test2: 
     base: salt-minion-precise

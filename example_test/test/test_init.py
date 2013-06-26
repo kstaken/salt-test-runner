@@ -8,6 +8,8 @@ class TestInit(unittest.TestCase):
     cls._containers = salttest.TestContainers("containers.yml")
     cls._containers.build()
     cls._containers.highstate()
+    environment = cls._containers.dump()
+    print environment
     
   @classmethod
   def tearDownClass(cls):

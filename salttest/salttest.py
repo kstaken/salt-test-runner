@@ -45,6 +45,25 @@ class TestContainers:
       self.log.info('Running highstate on container: %s', container)      
       self.containers[container].highstate()
     
+  def dump(self):
+    result = {}
+    result['containers'] = {}
+    for container in self.containers:
+      origin = self.containers[container]
+      output = result['containers'][container] = {}
+      output['image_id'] = str(origin.image_id)
+      output['container_id'] = str(origin.container_id)
+      if (origin.ports):
+        output['ports'] = {}
+        for port in origin.ports:
+          public_port = origin.docker_client.port(origin.container_id, str(port))
+          output['ports'][port] = str(public_port)
+
+      str(self.containers[container].container_id)
+
+    # TODO, change the YAML Dumper used here to be safe
+    return yaml.dump(result)
+
   def _setupLogging(self):
     self.log = logging.getLogger('salttest')
     self.log.setLevel(logging.DEBUG)
@@ -181,5 +200,5 @@ class BaseContainer:
     self.log.info('Base container registered with tag: %s', self.container_name)      
 
   def destroy(self):
-    self.log.info('Cleaning up case container: %s', self.container_name)      
+    self.log.info('Cleaning up base container: %s', self.container_name)      
     self.docker_client.remove_image(self.container_name)
