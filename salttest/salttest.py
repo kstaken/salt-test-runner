@@ -142,7 +142,11 @@ class TestContext:
       os.remove('/srv/salt/' + self.test_name)
     except:
       True
-    os.symlink(os.getcwd() + '/' + self.test_name + '/' + self.test_name, '/srv/salt/' + self.test_name)
+
+    state_path = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), '..', self.test_name)    
+    os.symlink(state_path, '/srv/salt/' + self.test_name)
+
     # replace top.sls
+    top_sls = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), 'top.sls')
     os.remove('/srv/salt/top.sls')
-    os.symlink(os.getcwd() + '/' + self.test_name + '/test/top.sls', '/srv/salt/top.sls')
+    os.symlink(top_sls, '/srv/salt/top.sls')
