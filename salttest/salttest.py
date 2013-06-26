@@ -95,11 +95,13 @@ class TestContext:
 
     # Tag the container with the test name
     self.docker_client.tag(self.image_id, self.build_tag)
+    self.log.info('Container registered with tag: %s', self.build_tag)      
 
   def _start_container(self):
     # Start the container
     self.container_id = self.docker_client.create_container(self.image_id, 'salt-minion', detach=True)['Id']
     self.docker_client.start(self.container_id)
+    self.log.info('Container started: %s', self.build_tag)      
 
   def _accept_keys(self):
     # Give the minion a chance to connect
@@ -111,18 +113,19 @@ class TestContext:
     
     # Accept the minion keys
     subprocess.Popen(['salt-key', '-y', '-a', self.build_tag], stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+    self.log.info('Salt Minion key accepted for: %s', self.build_tag)      
 
   def _verify_minion(self):
     # run a test ping
     max = 20
     while len(self.salt_client.cmd(self.build_tag, 'test.ping')) == 0 and max > 0:
-      #print 'Waiting for minion to be available ' + str(max)
-      max = max - 1
+      max = max - 1      
+      self.log.info('Waiting for minion to respond to ping on: %s Will attempt %d more times', self.build_tag, max)      
       time.sleep(1)
 
     if (len(self.salt_client.cmd(self.build_tag, 'test.ping')) == 0):
-      print 'ERROR: Failed to ping the minion'
-      sys.exit(1)
+      self.log.error('Failed to ping the minion for: %s', self.build_tag)
+      sys.exit(1) # <--- this is problematic
         
   def _setup_states(self):
     # Setup the salt tree.
