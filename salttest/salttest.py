@@ -44,6 +44,42 @@ class TestContainers:
     for container in self.containers:
       self.log.info('Running highstate on container: %s', container)      
       self.containers[container].highstate()
+
+  def setup_salt(self, config='module_test', environment=None, top_sls='top.sls', module=None):
+    # We're testing a single module with a top.sls relative to the test script
+    if (config == 'module_test'):
+
+      test_top_sls = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), top_sls)
+      
+      if (module):
+        state_path = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), module)    
+      else:
+        #state_path = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), '..', self.test_name)    
+        pass
+      self.log.info('Setting up salt for a module test of: %s', state_path)      
+
+      module_name = os.path.basename(state_path)
+      try:
+        os.remove('/srv/salt/' + module_name)
+      except:
+        True
+
+      os.symlink(state_path, '/srv/salt/' + module_name)
+
+      # replace top.sls
+      os.rename('/srv/salt/top.sls', '/srv/salt/top.sls.orig')
+      os.symlink(test_top_sls, '/srv/salt/top.sls')
+    # We're testing a full environment and the environment var should contain the location
+    elif (config == 'environment'):
+      self.log.info('Setting up salt for environment test of: %s', environment)      
+
+      try:
+        os.rename('/srv/salt', '/srv/salt.orig')
+      except:
+        True
+
+      os.symlink(environment, '/srv/salt')
+      
     
   def dump(self):
     result = {}
@@ -73,6 +109,7 @@ class TestContainers:
     filehandler.setLevel(logging.DEBUG)
     filehandler.setFormatter(formatter)
     self.log.addHandler(filehandler)
+  
 
 class TestContext:
   def __init__(self, test_name, base_image=None, minion_config=None, top_state=None, ports=None):
@@ -94,7 +131,6 @@ class TestContext:
     self._start_container()
     self._accept_keys()
     self._verify_minion()
-    self._setup_states()
     
   def highstate(self):
     self.salt_client.cmd(self.build_tag, 'state.highstate')
@@ -160,23 +196,9 @@ class TestContext:
       
     self.log.info('Minion for %s responded to ping', self.build_tag)
         
-  def _setup_states(self):
-    # Setup the salt tree.
+
+
     
-    # TODO: get rid of these hard coded paths
-    try:
-      os.remove('/srv/salt/' + self.test_name)
-    except:
-      True
-
-    state_path = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), '..', self.test_name)    
-    os.symlink(state_path, '/srv/salt/' + self.test_name)
-
-    # replace top.sls
-    top_sls = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), 'top.sls')
-    os.remove('/srv/salt/top.sls')
-    os.symlink(top_sls, '/srv/salt/top.sls')
-
 class BaseContainer:
   def __init__(self, container_name):
     self.log = logging.getLogger('salttest')
