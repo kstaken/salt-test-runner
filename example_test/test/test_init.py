@@ -1,5 +1,5 @@
 import unittest, sys
-#sys.path.append(".")
+sys.path.append(".")
 from salttest import salttest
 
 class TestInit(unittest.TestCase):

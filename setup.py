@@ -6,4 +6,5 @@ setup(name='salttest',
     author_email='kstaken@kstaken.com',
     url='http://github.com/kstaken/salt-test-runner',
     packages=['salttest'],
+    package_data={'salttest': ['docker/*.docker']}
 )

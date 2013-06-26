@@ -3,7 +3,7 @@
 #
 # VERSION               0.0.1
 
-FROM      ubuntu:precise
+FROM      ubuntu
 MAINTAINER Kimbro Staken "kstaken@kstaken.com"
 
 # make sure the package repository is up to date

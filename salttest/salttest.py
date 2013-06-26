@@ -2,6 +2,7 @@ import unittest
 import docker
 import os, sys, time, subprocess, yaml
 import logging
+import salttest
 import salt.client
 import salt.key
 
@@ -23,6 +24,7 @@ class TestContainers:
   def build(self):
     for container in self.config['containers']:
       base = self.config['containers'][container]['base']
+      #BaseContainer(base)
       self.log.info('Building container: %s using base template %s', container, base)
       build = TestContext(container, base_image=base)
       build.build()
@@ -59,9 +61,10 @@ class TestContext:
     self.salt_client = salt.client.LocalClient()
     self.minion_config = minion_config
     self.top_state = top_state
-    self.base_image = 'salt-minion'
+    self.base_image = 'salt-minion-precise'
+    print base_image
     if (base_image):
-      salt.base_image = base_image
+      self.base_image = base_image
 
   def build(self):        
     self._build_container()
@@ -94,9 +97,11 @@ class TestContext:
     
     self.log.info("Building container with minionconfig: %s", minionconfig)
     # Build the container
+    print dockerfile % (self.base_image, minionconfig)
     result = self.docker_client.build((dockerfile % (self.base_image, minionconfig)).split('\n'))
     self.image_id = result[0]
-
+    print self.image_id
+    print self.build_tag
     # Tag the container with the test name
     self.docker_client.tag(self.image_id, self.build_tag)
     self.log.info('Container registered with tag: %s', self.build_tag)      
@@ -149,3 +154,29 @@ class TestContext:
     top_sls = os.path.join(os.getcwd(), os.path.dirname(sys.argv[0]), 'top.sls')
     os.remove('/srv/salt/top.sls')
     os.symlink(top_sls, '/srv/salt/top.sls')
+
+class BaseContainer:
+  def __init__(self, container_name):
+    self.log = logging.getLogger('salttest')
+    self.log.info('Building base container: %s - This may take a while', container_name)      
+    
+    template = os.path.join(os.path.dirname(salttest.__file__), 'docker', container_name + '.docker')
+    self.dockerfile = open(template, 'r').readlines()
+    self.docker_client = docker.Client()
+    self.container_name = container_name
+    print self.dockerfile
+    #sys.exit(1)
+    self.build()
+
+  def build(self):
+    # Build the container
+    result = self.docker_client.build(self.dockerfile)
+    self.image_id = result[0]
+
+    # Tag the container with the test name
+    self.docker_client.tag(self.image_id, self.container_name)
+    self.log.info('Base container registered with tag: %s', self.container_name)      
+
+  def destroy(self):
+    self.log.info('Cleaning up case container: %s', self.container_name)      
+    self.docker_client.remove_image(self.container_name)
