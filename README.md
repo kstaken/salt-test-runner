@@ -3,7 +3,7 @@ salt-test-runner
 
 Experimental salt stack module and state testing using Docker
 
-Status: basic container running with salt-minion under docker
+Status: Basic multi-node environments and tests work in rudimentary fashion
 
 Provide a distributed test environment for salt stack modules and states that runs within a single VM.
 
