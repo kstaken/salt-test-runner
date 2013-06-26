@@ -1,5 +1,5 @@
 containers:
   example_test: 
-    - base: salt-minion
+    base: salt-minion
   example_test2: 
-    - base: salt-minion
+    base: salt-minion

@@ -22,8 +22,9 @@ class TestContainers:
 
   def build(self):
     for container in self.config['containers']:
-      self.log.info('Building container: %s', container)
-      build = TestContext(container)
+      base = self.config['containers'][container]['base']
+      self.log.info('Building container: %s using base template %s', container, base)
+      build = TestContext(container, base_image=base)
       build.build()
 
       self.containers[container] = build
@@ -49,7 +50,7 @@ class TestContainers:
     self.log.addHandler(filehandler)
 
 class TestContext:
-  def __init__(self, test_name, minion_config=None, top_state=None):
+  def __init__(self, test_name, base_image=None, minion_config=None, top_state=None):
     self.log = logging.getLogger('salttest')
 
     self.test_name = test_name
@@ -58,6 +59,9 @@ class TestContext:
     self.salt_client = salt.client.LocalClient()
     self.minion_config = minion_config
     self.top_state = top_state
+    self.base_image = 'salt-minion'
+    if (base_image):
+      salt.base_image = base_image
 
   def build(self):        
     self._build_container()
@@ -78,7 +82,7 @@ class TestContext:
 
   def _build_container(self):
     # Generate the docker build profile
-    dockerfile = """FROM salt-minion
+    dockerfile = """FROM %s
     MAINTAINER Kimbro Staken "kstaken@kstaken.com"
 
     CMD ["salt-minion"]
@@ -90,7 +94,7 @@ class TestContext:
     
     self.log.info("Building container with minionconfig: %s", minionconfig)
     # Build the container
-    result = self.docker_client.build((dockerfile % minionconfig).split('\n'))
+    result = self.docker_client.build((dockerfile % (self.base_image, minionconfig)).split('\n'))
     self.image_id = result[0]
 
     # Tag the container with the test name
@@ -126,6 +130,8 @@ class TestContext:
     if (len(self.salt_client.cmd(self.build_tag, 'test.ping')) == 0):
       self.log.error('Failed to ping the minion for: %s', self.build_tag)
       sys.exit(1) # <--- this is problematic
+      
+    self.log.info('Minion for %s responded to ping', self.build_tag)
         
   def _setup_states(self):
     # Setup the salt tree.
