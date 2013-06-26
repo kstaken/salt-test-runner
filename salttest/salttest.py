@@ -74,11 +74,11 @@ class TestContainers:
       self.log.info('Setting up salt for environment test of: %s', environment)      
 
       try:
-        os.rename('/srv/salt', '/srv/salt.orig')
+        os.rename('/srv/', '/srv.orig')
       except:
         True
 
-      os.symlink(environment, '/srv/salt')
+      os.symlink(environment, '/srv')
       
     
   def dump(self):
@@ -152,6 +152,7 @@ class TestContext:
     RUN echo %s > /etc/salt/minion
     """
 
+    # master ip here probably needs to be dynamic
     minionconfig = '\"master: 172.16.42.1\\nid: %s\"' % self.build_tag
     
     self.log.info("Building container with minionconfig: %s", minionconfig)
