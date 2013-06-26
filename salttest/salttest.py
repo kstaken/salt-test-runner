@@ -1,11 +1,57 @@
 import unittest
 import docker
-import os, sys, time, subprocess
+import os, sys, time, subprocess, yaml
+import logging
 import salt.client
 import salt.key
 
-class TestContext():
+class TestContainers:
+  def __init__(self, conf_file):
+    self._setupLogging()
+
+    if (not conf_file.startswith('/')):
+      conf_file = os.path.join(os.path.dirname(sys.argv[0]), conf_file)
+
+    data = open(conf_file, 'r')
+    self.config = yaml.load(data)
+
+    self.containers = {}
+
+  def get(self, container):
+    return self.containers[container]
+
+  def build(self):
+    for container in self.config['containers']:
+      self.log.info('Building container: %s', container)
+      build = TestContext(container)
+      build.build()
+
+      self.containers[container] = build
+      
+  def destroy(self):
+    for container in self.containers:
+      self.log.info('Destroying container: %s', container)      
+      self.containers[container].destroy()
+      
+  def highstate(self):
+    for container in self.containers:
+      self.log.info('Running highstate on container: %s', container)      
+      self.containers[container].highstate()
+    
+  def _setupLogging(self):
+    self.log = logging.getLogger('salttest')
+    self.log.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(asctime)s %(levelname)-10s %(message)s")
+    filehandler = logging.FileHandler('salttest.txt', 'w')
+    filehandler.setLevel(logging.DEBUG)
+    filehandler.setFormatter(formatter)
+    self.log.addHandler(filehandler)
+
+class TestContext:
   def __init__(self, test_name, minion_config=None, top_state=None):
+    self.log = logging.getLogger('salttest')
+
     self.test_name = test_name
     self.build_tag = test_name + '-' + str(os.getpid())
     self.docker_client = docker.Client()
@@ -25,7 +71,7 @@ class TestContext():
 
   def destroy(self):
     # Cleanup
-    output, error = subprocess.Popen(['/usr/bin/salt-key', '-y', '-d', self.build_tag], stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+    output, error = subprocess.Popen(['salt-key', '-y', '-d', self.build_tag], stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
     
     self.docker_client.stop(self.container_id)
     self.docker_client.remove_image(self.build_tag)
@@ -42,6 +88,7 @@ class TestContext():
 
     minionconfig = '\"master: 172.16.42.1\\nid: %s\"' % self.build_tag
     
+    self.log.info("Building container with minionconfig: %s", minionconfig)
     # Build the container
     result = self.docker_client.build((dockerfile % minionconfig).split('\n'))
     self.image_id = result[0]
@@ -57,13 +104,13 @@ class TestContext():
   def _accept_keys(self):
     # Give the minion a chance to connect
     #time.sleep(5)
-    command = ['/usr/bin/salt-key', '-l', 'un']
+    command = ['salt-key', '-l', 'un']
     output = ''
     while (self.build_tag not in output):
       output, error = subprocess.Popen(command, stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
     
     # Accept the minion keys
-    output, error = subprocess.Popen(['/usr/bin/salt-key', '-y', '-a', self.build_tag], stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
+    subprocess.Popen(['salt-key', '-y', '-a', self.build_tag], stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
 
   def _verify_minion(self):
     # run a test ping
@@ -80,6 +127,8 @@ class TestContext():
   def _setup_states(self):
     # Setup the salt tree.
     # link the test module into place
+
+    # TODO: get rid of these hard coded paths
     try:
       os.remove('/srv/salt/' + self.test_name)
     except:
