@@ -62,7 +62,6 @@ class TestContext:
     self.minion_config = minion_config
     self.top_state = top_state
     self.base_image = 'salt-minion-precise'
-    print base_image
     if (base_image):
       self.base_image = base_image
 
@@ -97,11 +96,9 @@ class TestContext:
     
     self.log.info("Building container with minionconfig: %s", minionconfig)
     # Build the container
-    print dockerfile % (self.base_image, minionconfig)
     result = self.docker_client.build((dockerfile % (self.base_image, minionconfig)).split('\n'))
     self.image_id = result[0]
-    print self.image_id
-    print self.build_tag
+    
     # Tag the container with the test name
     self.docker_client.tag(self.image_id, self.build_tag)
     self.log.info('Container registered with tag: %s', self.build_tag)      
