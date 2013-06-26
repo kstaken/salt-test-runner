@@ -135,8 +135,7 @@ class TestContext:
         
   def _setup_states(self):
     # Setup the salt tree.
-    # link the test module into place
-
+    
     # TODO: get rid of these hard coded paths
     try:
       os.remove('/srv/salt/' + self.test_name)
