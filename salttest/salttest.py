@@ -24,9 +24,13 @@ class TestContainers:
   def build(self):
     for container in self.config['containers']:
       base = self.config['containers'][container]['base']
+      ports = None
+      if ('ports' in self.config['containers'][container]):
+        ports = self.config['containers'][container]['ports']
+        
       #BaseContainer(base)
       self.log.info('Building container: %s using base template %s', container, base)
-      build = TestContext(container, base_image=base)
+      build = TestContext(container, base_image=base, ports=ports)
       build.build()
 
       self.containers[container] = build
@@ -52,7 +56,7 @@ class TestContainers:
     self.log.addHandler(filehandler)
 
 class TestContext:
-  def __init__(self, test_name, base_image=None, minion_config=None, top_state=None):
+  def __init__(self, test_name, base_image=None, minion_config=None, top_state=None, ports=None):
     self.log = logging.getLogger('salttest')
 
     self.test_name = test_name
@@ -61,6 +65,7 @@ class TestContext:
     self.salt_client = salt.client.LocalClient()
     self.minion_config = minion_config
     self.top_state = top_state
+    self.ports = ports
     self.base_image = 'salt-minion-precise'
     if (base_image):
       self.base_image = base_image
@@ -105,7 +110,8 @@ class TestContext:
 
   def _start_container(self):
     # Start the container
-    self.container_id = self.docker_client.create_container(self.image_id, 'salt-minion', detach=True)['Id']
+    self.container_id = self.docker_client.create_container(self.image_id, 'salt-minion', 
+      detach=True, ports=self.ports, hostname=self.build_tag)['Id']
     self.docker_client.start(self.container_id)
     self.log.info('Container started: %s', self.build_tag)      
 
