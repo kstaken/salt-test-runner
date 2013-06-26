@@ -11,7 +11,7 @@ Requires: Salt Stack & Docker
 
 Build a docker template with the salt-minion installed.
 
-    docker build -t salt-minion - < docker/salt-minion.docker
+    docker build -t salt-minion-precise - < docker/salt-minion-precise.docker
 
 That container can then be executed by running, but the tests will handle container setup automatically.
     

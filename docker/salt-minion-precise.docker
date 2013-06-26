@@ -3,7 +3,7 @@
 #
 # VERSION               0.0.1
 
-FROM      ubuntu
+FROM      ubuntu:precise
 MAINTAINER Kimbro Staken "kstaken@kstaken.com"
 
 # make sure the package repository is up to date
@@ -11,7 +11,6 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt
 RUN apt-get update
 
 RUN apt-get install -y python-software-properties 
-#sudo ca-certificates 
 RUN add-apt-repository ppa:saltstack/salt
 
 RUN apt-get update
