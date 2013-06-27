@@ -80,7 +80,12 @@ class TestContainers:
 
       os.symlink(environment, '/srv')
       
-    
+  def save(self, filename='environment.yml'):
+    self.log.info('Saving environment state to: %s', filename)      
+      
+    with open(filename, 'w') as output_file:
+      output_file.write(self.dump())
+
   def dump(self):
     result = {}
     result['containers'] = {}

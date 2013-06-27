@@ -9,8 +9,7 @@ class TestInit(unittest.TestCase):
     cls._containers.build()
     cls._containers.setup_salt(config='module_test', top_sls='top.sls', module='../example_test')
     cls._containers.highstate()
-    environment = cls._containers.dump()
-    print environment
+    environment = cls._containers.save()
     
   @classmethod
   def tearDownClass(cls):
