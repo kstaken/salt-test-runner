@@ -195,10 +195,7 @@ class TestContext:
       self.log.error('Failed to ping the minion for: %s', self.build_tag)
       sys.exit(1) # <--- this is problematic
       
-    self.log.info('Minion for %s responded to ping', self.build_tag)
-        
-
-
+    self.log.info('Minion for %s responded to ping', self.build_tag)        
     
 class BaseContainer:
   def __init__(self, container_name):
