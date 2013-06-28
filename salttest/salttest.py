@@ -4,7 +4,6 @@ import os, sys, time, subprocess, yaml, shutil
 import logging
 import salttest
 import salt.client
-import salt.key
 
 class TestContainers:
   def __init__(self, conf_file=None, environment=None):
@@ -18,9 +17,7 @@ class TestContainers:
         conf_file = os.path.join(os.path.dirname(sys.argv[0]), conf_file)
 
       data = open(conf_file, 'r')
-      self.config = yaml.load(data)
-
-      
+      self.config = yaml.load(data)      
 
   def get(self, container):
     return self.containers[container]
