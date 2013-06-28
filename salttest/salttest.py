@@ -73,16 +73,13 @@ class TestContainers:
     # We're testing a full environment and the environment var should contain the location
     elif (config == 'environment'):
       self.log.info('Setting up salt for environment test of: %s', environment)      
-
-      #try:
+      
       if (os.path.islink('/srv')):
         os.remove('/srv')
       else:
         shutil.rmtree('/srv.orig', ignore_errors=True)
         shutil.move('/srv/', '/srv.orig')
-      #except:
-      #  True
-
+      
       os.symlink(environment, '/srv')
 
   def load(self, filename='envrionment.yml'):
@@ -236,8 +233,7 @@ class BaseContainer:
     self.dockerfile = open(template, 'r').readlines()
     self.docker_client = docker.Client()
     self.container_name = container_name
-    print self.dockerfile
-    #sys.exit(1)
+    
     self.build()
 
   def build(self):
