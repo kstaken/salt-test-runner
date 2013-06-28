@@ -1,22 +1,26 @@
 import unittest
 import docker
-import os, sys, time, subprocess, yaml
+import os, sys, time, subprocess, yaml, shutil
 import logging
 import salttest
 import salt.client
 import salt.key
 
 class TestContainers:
-  def __init__(self, conf_file):
+  def __init__(self, conf_file=None, environment=None):
     self._setupLogging()
-
-    if (not conf_file.startswith('/')):
-      conf_file = os.path.join(os.path.dirname(sys.argv[0]), conf_file)
-
-    data = open(conf_file, 'r')
-    self.config = yaml.load(data)
-
     self.containers = {}
+    
+    if (environment):
+      self.load(environment)
+    else:
+      if (not conf_file.startswith('/')):
+        conf_file = os.path.join(os.path.dirname(sys.argv[0]), conf_file)
+
+      data = open(conf_file, 'r')
+      self.config = yaml.load(data)
+
+      
 
   def get(self, container):
     return self.containers[container]
@@ -73,13 +77,29 @@ class TestContainers:
     elif (config == 'environment'):
       self.log.info('Setting up salt for environment test of: %s', environment)      
 
-      try:
-        os.rename('/srv/', '/srv.orig')
-      except:
-        True
+      #try:
+      if (os.path.islink('/srv')):
+        os.remove('/srv')
+      else:
+        shutil.rmtree('/srv.orig', ignore_errors=True)
+        shutil.move('/srv/', '/srv.orig')
+      #except:
+      #  True
 
       os.symlink(environment, '/srv')
-      
+
+  def load(self, filename='envrionment.yml'):
+    self.log.info('Loading environment from: %s', filename)      
+    
+    with open(filename, 'r') as input_file:
+      environment = yaml.load(input_file)
+
+      for container in environment['containers']:
+        print container
+        self.containers[container] = TestContext(container, build_tag=environment['containers'][container]['build_tag'], 
+          container_id=environment['containers'][container]['container_id'], image_id=environment['containers'][container]['image_id'])
+    print self.containers
+
   def save(self, filename='environment.yml'):
     self.log.info('Saving environment state to: %s', filename)      
       
@@ -94,6 +114,8 @@ class TestContainers:
       output = result['containers'][container] = {}
       output['image_id'] = str(origin.image_id)
       output['container_id'] = str(origin.container_id)
+      output['build_tag'] = str(origin.build_tag)
+      
       if (origin.ports):
         output['ports'] = {}
         for port in origin.ports:
@@ -117,15 +139,21 @@ class TestContainers:
   
 
 class TestContext:
-  def __init__(self, test_name, base_image=None, minion_config=None, top_state=None, ports=None):
+  def __init__(self, test_name, build_tag=None, container_id=None, image_id=None, base_image=None, minion_config=None, top_state=None, ports=None):
     self.log = logging.getLogger('salttest')
 
     self.test_name = test_name
-    self.build_tag = test_name + '-' + str(os.getpid())
-    self.docker_client = docker.Client()
-    self.salt_client = salt.client.LocalClient()
+    self.container_id=container_id
+    self.image_id=image_id
+    self.build_tag = build_tag
+    if (not build_tag):
+      self.build_tag = test_name + '-' + str(os.getpid())
+    
     self.minion_config = minion_config
     self.top_state = top_state
+    
+    self.docker_client = docker.Client()
+    self.salt_client = salt.client.LocalClient()
     self.ports = ports
     self.base_image = 'salt-minion-precise'
     if (base_image):
