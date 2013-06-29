@@ -3,7 +3,7 @@ salt-test-runner
 
 Experimental salt stack module and state testing using Docker
 
-Status: Basic multi-node environments and tests work in rudimentary fashion
+Status: Basic multi-node environments and tests work in rudimentary fashion but I've decided to break out the docker container management into a separate project called dockermix. Currently salt states have problems with the minimal enironments of docker containers and you can't currently run init under docker. There is patch waiting merge. 
 
 Provide a distributed test environment for salt stack modules and states that runs within a single VM.
 
